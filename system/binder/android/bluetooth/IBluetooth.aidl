@@ -69,6 +69,7 @@ import android.os.ParcelFileDescriptor;
 import android.os.ResultReceiver;
 
 import com.android.modules.utils.SynchronousResultReceiver;
+import android.bluetooth.TctExtIBluetooth;
 
 /**
  * System private API for talking with the Bluetooth service.
@@ -343,4 +344,7 @@ interface IBluetooth
 
     @JavaPassthrough(annotation="@android.annotation.RequiresPermission(allOf={android.Manifest.permission.BLUETOOTH_CONNECT,android.Manifest.permission.BLUETOOTH_PRIVILEGED})")
     oneway void setForegroundUserId(in int userId, in AttributionSource attributionSource);
+
+    @JavaPassthrough(annotation="@android.annotation.RequiresPermission(android.Manifest.permission.BLUETOOTH_CONNECT)")
+    TctExtIBluetooth getTctExtIBluetoothInterface();
 }

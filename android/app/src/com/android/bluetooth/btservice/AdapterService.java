@@ -3777,6 +3777,11 @@ public class AdapterService extends Service {
             enforceBluetoothPrivilegedPermission(service);
             Utils.setForegroundUserId(userId);
         }
+
+        @Override
+        public TctExtIBluetooth getTctExtIBluetoothInterface(){
+            return null;
+        }
     }
 
     // ----API Methods--------

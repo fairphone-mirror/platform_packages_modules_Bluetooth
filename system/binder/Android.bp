@@ -13,6 +13,7 @@ filegroup {
     srcs: [
         ":modules-utils-synchronous-result-receiver-aidl",
         "android/bluetooth/IBluetooth.aidl",
+        "android/bluetooth/TctExtIBluetooth.aidl",
         "android/bluetooth/IBluetoothA2dp.aidl",
         "android/bluetooth/IBluetoothA2dpSink.aidl",
         "android/bluetooth/IBluetoothActivityEnergyInfoListener.aidl",
