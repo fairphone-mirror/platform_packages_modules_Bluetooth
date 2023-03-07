@@ -6061,4 +6061,8 @@ public final class BluetoothAdapter {
         }
         return BluetoothStatusCodes.ERROR_UNKNOWN;
     }
+
+    IBluetooth getService() {
+         return mService;
+    }
 }

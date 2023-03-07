@@ -4476,6 +4476,11 @@ public class AdapterService extends Service {
         }
 
         @Override
+        public TctExtIBluetooth getTctExtIBluetoothInterface(){
+            return null;
+        }
+
+        @Override
         public void setPreferredAudioProfiles(BluetoothDevice device, Bundle modeToProfileBundle,
                 AttributionSource source, SynchronousResultReceiver receiver) {
             try {
