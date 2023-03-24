@@ -12,6 +12,11 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * Changes from Qualcomm Innovation Center are provided under the following license:
+ * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
+ *
  */
 
 #ifndef ANDROID_INCLUDE_BLUETOOTH_H
@@ -57,6 +62,7 @@
 #define BT_PROFILE_CSIS_CLIENT_ID "csis_client"
 #define BT_PROFILE_LE_AUDIO_ID "le_audio"
 #define BT_PROFILE_LE_AUDIO_BROADCASTER_ID "le_audio_broadcaster"
+#define BT_PROFILE_ATP_LOCATOR_ID "atp_locator"
 
 /** Bluetooth Device Name */
 typedef struct { uint8_t name[249]; } __attribute__((packed)) bt_bdname_t;
@@ -458,6 +464,12 @@ typedef void (*bond_state_changed_callback)(bt_status_t status,
 typedef void (*address_consolidate_callback)(RawAddress* main_bd_addr,
                                              RawAddress* secondary_bd_addr);
 
+/** Bluetooth LE Address association callback */
+/* Callback for the upper layer to associate the LE-only device's RPA to the
+ * identity address */
+typedef void (*le_address_associate_callback)(RawAddress* main_bd_addr,
+                                              RawAddress* secondary_bd_addr);
+
 /** Bluetooth ACL connection state changed callback */
 typedef void (*acl_state_changed_callback)(bt_status_t status,
                                            RawAddress* remote_bd_addr,
@@ -527,6 +539,7 @@ typedef struct {
   ssp_request_callback ssp_request_cb;
   bond_state_changed_callback bond_state_changed_cb;
   address_consolidate_callback address_consolidate_cb;
+  le_address_associate_callback le_address_associate_cb;
   acl_state_changed_callback acl_state_changed_cb;
   callback_thread_event thread_evt_cb;
   dut_mode_recv_callback dut_mode_recv_cb;

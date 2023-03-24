@@ -13,6 +13,11 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * Changes from Qualcomm Innovation Center are provided under the following license:
+ * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
+ *
  */
 
 package android.bluetooth;
@@ -3894,6 +3899,10 @@ public final class BluetoothAdapter {
             return true;
         } else if (profile == BluetoothProfile.CS_PROFILE) {
             return getCSProfile(context, listener);
+        } else if (profile == BluetoothProfile.LE_DIRECTION_FINDING) {
+            BluetoothLeDirectionFinder leDf =
+                    new BluetoothLeDirectionFinder(context, listener);
+            return true;
         } else {
             return false;
         }
@@ -4033,6 +4042,11 @@ public final class BluetoothAdapter {
                 break;
 	    case BluetoothProfile.CS_PROFILE:
                 closeCSProfile(proxy);
+                break;
+            case BluetoothProfile.LE_DIRECTION_FINDING:
+                BluetoothLeDirectionFinder leDf =
+                        (BluetoothLeDirectionFinder) proxy;
+                leDf.close();
                 break;
         }
     }
@@ -4551,14 +4565,18 @@ public final class BluetoothAdapter {
 
     /*package*/ IBluetooth getBluetoothService() {
         synchronized (sServiceLock) {
-            if (sProxyServiceStateCallbacks.isEmpty()) {
-                throw new IllegalStateException(
-                        "Anonymous service access requires at least one lifecycle in process");
-            }
             return sService;
         }
     }
 
+    /**
+     * Registers a IBluetoothManagerCallback and returns the cached
+     * Bluetooth service proxy object.
+     *
+     * TODO: rename this API to registerBlueoothManagerCallback or something?
+     * the current name does not match what it does very well.
+     *
+     * /
     @UnsupportedAppUsage
     /*package*/ IBluetooth getBluetoothService(IBluetoothManagerCallback cb) {
         Objects.requireNonNull(cb);
