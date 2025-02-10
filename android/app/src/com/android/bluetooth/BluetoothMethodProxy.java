@@ -28,7 +28,6 @@ import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
-import android.content.res.AssetFileDescriptor;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
@@ -144,23 +143,6 @@ public class BluetoothMethodProxy {
     public ParcelFileDescriptor contentResolverOpenFileDescriptor(ContentResolver contentResolver,
             final Uri uri, final String mode) throws FileNotFoundException {
         return contentResolver.openFileDescriptor(uri, mode);
-    }
-
-    /**
-     * Proxies {@link ContentResolver#openAssetFileDescriptor(Uri, String)}.
-     */
-    public AssetFileDescriptor contentResolverOpenAssetFileDescriptor(
-            ContentResolver contentResolver, final Uri uri, final String mode)
-            throws FileNotFoundException {
-        return contentResolver.openAssetFileDescriptor(uri, mode);
-    }
-
-    /**
-     * Proxies {@link ContentResolver#openInputStream(Uri)}.
-     */
-    public InputStream contentResolverOpenInputStream(ContentResolver contentResolver,
-            final Uri uri) throws FileNotFoundException {
-        return contentResolver.openInputStream(uri);
     }
 
     /**
