@@ -58,6 +58,22 @@ bool is_hal_enabled() {
   return false;
 }
 
+bool is_offload_session_unknown() {
+  LOG(INFO) << __func__;
+ if (HalVersionManager::GetHalTransport() ==
+      BluetoothAudioHalTransport::HIDL) {
+    return hidl::a2dp::is_hal_2_0_offloading_session_unknown();
+  } else if (HalVersionManager::GetHalTransport() ==
+      BluetoothAudioHalTransport::AIDL) {
+    return aidl::a2dp::is_hal_2_0_offloading_session_unknown();
+  } else if (HalVersionManager::GetHalTransport() ==
+      BluetoothAudioHalTransport::QTI_HIDL) {
+    LOG(INFO) << __func__<< ": qti_hidl is_hal_2_0_offloading_session_unknown";
+    return qti_hidl::a2dp::is_hal_2_0_offloading_session_unknown();
+  }
+  return false;
+}
+
 // Check if new bluetooth_audio is running with offloading encoders
 bool is_hal_offloading() {
   LOG(INFO) << __func__;
@@ -218,12 +234,12 @@ void set_remote_delay(uint16_t delay_report) {
   } else if (HalVersionManager::GetHalTransport() ==
       BluetoothAudioHalTransport::AIDL) {
     aidl::a2dp::set_remote_delay(delay_report);
+    bluetooth::audio::a2dp::setup_codec();
   } else if (HalVersionManager::GetHalTransport() ==
       BluetoothAudioHalTransport::QTI_HIDL) {
     LOG(INFO) << __func__ <<": qti_hidl set_remote_delay";
     qti_hidl::a2dp::set_remote_delay(delay_report);
   }
-  bluetooth::audio::a2dp::setup_codec();
   return;
 }
 

@@ -42,6 +42,9 @@
 #include "btif/include/btif_av.h"
 #include "btif/include/btif_hf.h"
 #include "bta/include/bta_le_audio_api.h"
+#include "btif/include/btif_config.h"
+#include "storage/config_keys.h"
+
 
 extern bool btif_av_peer_is_connected_sink(const RawAddress& peer_address);
 extern bool btif_av_both_enable(void);
@@ -98,6 +101,54 @@ void Device::SetBipClientStatus(bool connected) {
 }
 
 bool Device::HasBipClient() const { return has_bip_client_; }
+
+bool Device::HasCoverArtSupport() const {
+  log::verbose(" address_: {}", address_);
+  bool coverart_supported = false;
+  uint16_t ver = AVRC_REV_INVALID;
+  // Read the remote device's AVRC Controller version from local storage
+  size_t version_value_size = btif_config_get_bin_length(
+      address_.ToString(), BTIF_STORAGE_KEY_AVRCP_CONTROLLER_VERSION);
+  if (version_value_size != sizeof(ver)) {
+    log::error("cached value len wrong, address_={}. Len is {} but should be {}.",
+               address_.ToString(), version_value_size, sizeof(ver));
+    return coverart_supported;
+  }
+
+  if (!btif_config_get_bin(address_.ToString(),
+                           BTIF_STORAGE_KEY_AVRCP_CONTROLLER_VERSION,
+                           (uint8_t*)&ver, &version_value_size)) {
+    log::info("no cached AVRC Controller version for {}", address_);
+    return coverart_supported;
+  }
+  log::verbose(" Remote's AVRCP version: {}", ver);
+  if(ver < AVRC_REV_1_6) {
+    log::info(" AVRCP version is < 1.6, no cover art support");
+    return coverart_supported;
+  }
+
+  // Read the remote device's AVRCP features from local storage
+  uint16_t avrcp_peer_features = 0;
+  size_t features_value_size = btif_config_get_bin_length(
+      address_.ToString(), BTIF_STORAGE_KEY_AV_REM_CTRL_FEATURES);
+  if (features_value_size != sizeof(avrcp_peer_features)) {
+    log::error("cached value len wrong, bdaddr={}. Len is {} but should be {}.",
+               address_, features_value_size, sizeof(avrcp_peer_features));
+    return coverart_supported;
+  }
+
+  if (!btif_config_get_bin(
+          address_.ToString(), BTIF_STORAGE_KEY_AV_REM_CTRL_FEATURES,
+          (uint8_t*)&avrcp_peer_features, &features_value_size)) {
+    log::error("Unable to fetch cached AVRC features");
+    return coverart_supported;
+  }
+
+  coverart_supported =
+      ((AVRCP_FEAT_CA_BIT & avrcp_peer_features) == AVRCP_FEAT_CA_BIT);
+  log::verbose(" Remote's cover art support: {}", coverart_supported);
+  return coverart_supported;
+}
 
 void filter_cover_art(SongInfo& s) {
   for (auto it = s.attributes.begin(); it != s.attributes.end(); it++) {
@@ -841,7 +892,7 @@ void Device::TrackChangedNotificationResponse(uint8_t label, bool interim,
 
 void Device::PlaybackStatusNotificationResponse(uint8_t label, bool interim,
                                                 PlayStatus status) {
-  log::verbose("");
+  log::verbose("PlaybackStatusNotificationResponse, label:{}, interim:{}", label, interim);
   if (status.state == PlayState::PAUSED) play_pos_update_cb_.Cancel();
 
   if (interim) {
@@ -851,6 +902,7 @@ void Device::PlaybackStatusNotificationResponse(uint8_t label, bool interim,
     return;
   }
 
+  log::verbose("status.state: {}", status.state);
   auto state_to_send = status.state;
   log::verbose("fast_forwarding_: {}, fast_rewinding_: {}", fast_forwarding_, fast_rewinding_);
   if(fast_forwarding_ || fast_rewinding_) {
@@ -859,10 +911,34 @@ void Device::PlaybackStatusNotificationResponse(uint8_t label, bool interim,
   }
 
   log::verbose("state_to_send: {}", state_to_send);
-  if (!IsActive()) state_to_send = PlayState::PAUSED;
+  if (!IsActive()||(!bluetooth::headset::IsCallIdle())) state_to_send = PlayState::PAUSED;
+  log::verbose("New state_to_send: {}", state_to_send);
   if (!interim && state_to_send == last_play_status_.state) {
     log::verbose("Not sending notification due to no state update {}",
                  address_);
+    return;
+  }
+
+  log::verbose("last_play_status_.state: {}", last_play_status_.state);
+  if (interim && last_play_status_.state != state_to_send &&
+      (last_play_status_.state == PlayState::PAUSED ||
+       last_play_status_.state == PlayState::PLAYING)) {
+    log::verbose("playback Status has changed from last playstatus response");
+    auto lastresponse =
+       RegisterNotificationResponseBuilder::MakePlaybackStatusBuilder(
+         interim, last_play_status_.state);
+    send_message_cb_.Run(label, false, std::move(lastresponse));
+
+    last_play_status_.state = state_to_send;
+
+    log::verbose("Send new playback Status CHANGED");
+    auto newresponse =
+        RegisterNotificationResponseBuilder::MakePlaybackStatusBuilder(
+            false, IsActive() ? status.state : PlayState::PAUSED);
+    send_message_cb_.Run(label, false, std::move(newresponse));
+
+    active_labels_.erase(label);
+    play_status_changed_ = Notification(false, 0);
     return;
   }
 
@@ -975,8 +1051,10 @@ void Device::GetPlayStatusResponse(uint8_t label, PlayStatus status) {
   log::verbose("position={} duration={} state={}", status.position,
                status.duration, status.state);
   if(fast_forwarding_) {
+    log::verbose("fast forwarding");
     status.state = PlayState::FWD_SEEK;
   } else if(fast_rewinding_) {
+    log::verbose("fast rewinding");
     status.state = PlayState::REV_SEEK;
   }
   auto response = GetPlayStatusResponseBuilder::MakeBuilder(
@@ -1012,8 +1090,9 @@ void Device::GetElementAttributesResponse(
 
   auto response = GetElementAttributesResponseBuilder::MakeBuilder(ctrl_mtu_);
 
-  // Filter out DEFAULT_COVER_ART handle if this device has no client
-  if (!HasBipClient()) {
+  // Filter out DEFAULT_COVER_ART handle if this device has no client OR Cover art not supported
+  if (!HasBipClient() || !HasCoverArtSupport()) {
+    log::verbose("Remove cover art element if remote doesn't support coverart or has BIP connection");
     filter_cover_art(info);
   }
 
@@ -1026,14 +1105,14 @@ void Device::GetElementAttributesResponse(
       if (info.attributes.find(attribute) != info.attributes.end()) {
         if (info.attributes.find(attribute)->value().empty()) {
           log::verbose("empty attribute found");
-          response->AddAttributeEntry(attribute, "unavailable");
+          response->AddAttributeEntry(attribute, std::string());
         } else {
           response->AddAttributeEntry(*info.attributes.find(attribute));
         }
       } else {
         //we send a response even for attributes that we don't have a value for.
         log::verbose("attribute not found");
-        response->AddAttributeEntry(attribute, "unavailable");
+        response->AddAttributeEntry(attribute, std::string());
       }
     }
   } else {  // zero attributes requested which means all attributes requested
@@ -1050,7 +1129,7 @@ void Device::GetElementAttributesResponse(
         log::verbose("requested attribute: {}", AttributeText(attribute));
         if (info.attributes.find(attribute)->value().empty()) {
           log::verbose("empty attribute found");
-          response->AddAttributeEntry(attribute, "unavailable");
+          response->AddAttributeEntry(attribute, std::string());
         } else {
           response->AddAttributeEntry(*info.attributes.find(attribute));
         }
@@ -1058,7 +1137,7 @@ void Device::GetElementAttributesResponse(
         // If all attributes were requested, we send a response even for attributes that we don't
         // have a value for.
         log::verbose("attribute not found");
-        response->AddAttributeEntry(attribute, "unavailable");
+        response->AddAttributeEntry(attribute, std::string());
       }
     }
   }
@@ -2037,6 +2116,7 @@ void Device::PlayerSettingChangedNotificationResponse(
 void Device::HandleNowPlayingNotificationResponse(
     uint8_t label, bool interim, std::string curr_song_id,
     std::vector<SongInfo> song_list) {
+  log::verbose("");
   if (interim) {
     now_playing_changed_ = Notification(true, label);
   } else if (!now_playing_changed_.first) {

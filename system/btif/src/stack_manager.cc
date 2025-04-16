@@ -55,6 +55,7 @@
 #include "stack/include/l2c_api.h"
 #include "stack/include/port_api.h"
 #include "stack/sdp/sdpint.h"
+#include "osi/include/properties.h"
 #if (BNEP_INCLUDED == TRUE)
 #include "stack/include/bnep_api.h"
 #endif
@@ -252,7 +253,6 @@ inline const module_t* get_local_module(const char* name) {
 static void init_stack_internal(bluetooth::core::CoreInterface* interface) {
   // all callbacks out of libbluetooth-core happen via this interface
   interfaceToProfiles = interface;
-
   module_management_start();
 
   main_thread_start_up();
@@ -343,11 +343,9 @@ static void event_start_up_stack(bluetooth::core::CoreInterface* interface,
     return;
   }
 
-  if (com::android::bluetooth::flags::channel_sounding_in_stack()) {
     bluetooth::ras::GetRasServer()->Initialize();
     bluetooth::ras::GetRasClient()->Initialize();
     module_init(get_local_module(CS_CONFIG_MODULE));
-  }
 
   stack_is_running = true;
   log::info("finished");
@@ -392,7 +390,7 @@ static void event_shut_down_stack(ProfileStopCallback stopProfiles) {
   l2c_free();
   get_btm_client_interface().lifecycle.btm_ble_free();
 
-  get_btm_client_interface().lifecycle.btm_free();
+  do_in_main_thread(FROM_HERE, base::BindOnce(get_btm_client_interface().lifecycle.btm_free));
 
   hack_future = future_new();
   do_in_jni_thread(base::BindOnce(event_signal_stack_down, nullptr));
@@ -445,10 +443,7 @@ static void event_clean_up_stack(std::promise<void> promise,
   module_clean_up(get_local_module(OSI_MODULE));
   log::info("Gd shim module disabled");
   module_shut_down(get_local_module(GD_SHIM_MODULE));
-
-  if (com::android::bluetooth::flags::channel_sounding_in_stack()) {
-    module_clean_up(get_local_module(CS_CONFIG_MODULE));
-  }
+  module_clean_up(get_local_module(CS_CONFIG_MODULE));
 
   module_management_stop();
   log::info("finished");

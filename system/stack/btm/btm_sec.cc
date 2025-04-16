@@ -2995,8 +2995,11 @@ void btm_simple_pair_complete(const RawAddress bd_addr, uint8_t status) {
   if (status == HCI_SUCCESS) {
     p_dev_rec->sec_rec.sec_flags |= BTM_SEC_AUTHENTICATED;
   } else if (status == HCI_ERR_PAIRING_NOT_ALLOWED) {
-    /* The test spec wants the peer device to get this failure code. */
-    btm_sec_cb.change_pairing_state(BTM_PAIR_STATE_WAIT_DISCONNECT);
+
+    if (btm_sec_cb.pairing_state != BTM_PAIR_STATE_IDLE) {
+      /* The test spec wants the peer device to get this failure code. */
+      btm_sec_cb.change_pairing_state(BTM_PAIR_STATE_WAIT_DISCONNECT);
+    }
 
     /* Change the timer to 1 second */
     alarm_set_on_mloop(btm_sec_cb.pairing_timer, BT_1SEC_TIMEOUT_MS,
@@ -3156,14 +3159,15 @@ static bool btm_sec_auth_retry(uint16_t handle, uint8_t status) {
     btm_restore_mode();
     p_dev_rec->sm4 |= BTM_SM4_RETRY;
     p_dev_rec->sec_rec.sec_flags &= ~BTM_SEC_LINK_KEY_KNOWN;
-    log::verbose("Retry for missing key sm4:x{:x} sec_flags:0x{:x}",
-                 p_dev_rec->sm4, p_dev_rec->sec_rec.sec_flags);
+    log::verbose("Retry for missing key sm4:x{:x} sec_flags:0x{:x} sec_req_flags:0x{:x}",
+                 p_dev_rec->sm4, p_dev_rec->sec_rec.sec_flags, p_dev_rec->sec_rec.security_required);
 
     /* With BRCM controller, we do not need to delete the stored link key in
        controller.
        If the stack may sit on top of other controller, we may need this
        BTM_DeleteStoredLinkKey (bd_addr, NULL); */
     p_dev_rec->sec_rec.sec_state = BTM_SEC_STATE_IDLE;
+    p_dev_rec->sec_rec.required_security_flags_for_pairing = p_dev_rec->sec_rec.security_required;
     btm_sec_execute_procedure(p_dev_rec);
     return true;
   }
@@ -3517,8 +3521,7 @@ void btm_sec_encrypt_change(uint16_t handle, tHCI_STATUS status,
   tBTM_STATUS btm_status = btm_sec_execute_procedure(p_dev_rec);
   /* If there is no next procedure, or procedure failed to start, notify the
    * caller */
-  if (static_cast<std::underlying_type_t<tHCI_STATUS>>(status) !=
-      BTM_CMD_STARTED)
+  if (btm_status != BTM_CMD_STARTED)
     btm_sec_dev_rec_cback_event(p_dev_rec, btm_status, false);
 }
 
