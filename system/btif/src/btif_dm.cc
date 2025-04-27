@@ -4167,16 +4167,17 @@ static const char* btif_get_default_local_name() {
   if (btif_default_local_name[0] == '\0') {
     int max_len = sizeof(btif_default_local_name) - 1;
 
-    char prop_name[PROPERTY_VALUE_MAX];
-    osi_property_get(PROPERTY_DEFAULT_DEVICE_NAME, prop_name, "");
-    strncpy(btif_default_local_name, prop_name, max_len);
+    //char prop_name[PROPERTY_VALUE_MAX];
+    //osi_property_get(PROPERTY_DEFAULT_DEVICE_NAME, prop_name, "");
+    //strncpy(btif_default_local_name, prop_name, max_len);
 
     // If no value was placed in the btif_default_local_name then use model name
-    if (btif_default_local_name[0] == '\0') {
-      char prop_model[PROPERTY_VALUE_MAX];
-      osi_property_get(PROPERTY_PRODUCT_MODEL, prop_model, "");
-      strncpy(btif_default_local_name, prop_model, max_len);
-    }
+    //if (btif_default_local_name[0] == '\0') {
+      //char prop_model[PROPERTY_VALUE_MAX];
+      //osi_property_get(PROPERTY_PRODUCT_MODEL, prop_model, "");
+      //strncpy(btif_default_local_name, prop_model, max_len);
+    //}
+    strncpy(btif_default_local_name, "The Fairphone (Gen.6)", max_len);
     btif_default_local_name[max_len] = '\0';
   }
   return btif_default_local_name;
