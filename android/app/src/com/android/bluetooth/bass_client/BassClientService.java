@@ -97,7 +97,6 @@ import java.util.concurrent.ConcurrentHashMap;
 /** Broacast Assistant Scan Service */
 public class BassClientService extends ProfileService {
     private static final String TAG = BassClientService.class.getSimpleName();
-    private static final int MAX_BASS_CLIENT_STATE_MACHINES = 10;
     private static final int MAX_ACTIVE_SYNCED_SOURCES_NUM = 4;
     private static final int MAX_BIS_DISCOVERY_TRIES_NUM = 5;
 
@@ -1146,14 +1145,7 @@ public class BassClientService extends ProfileService {
             if (stateMachine != null) {
                 return stateMachine;
             }
-            // Limit the maximum number of state machines to avoid DoS attack
-            if (mStateMachines.size() >= MAX_BASS_CLIENT_STATE_MACHINES) {
-                Log.e(
-                        TAG,
-                        "Maximum number of Bassclient state machines reached: "
-                                + MAX_BASS_CLIENT_STATE_MACHINES);
-                return null;
-            }
+
             log("Creating a new state machine for " + device);
             stateMachine =
                     BassObjectsFactory.getInstance()
@@ -1391,7 +1383,7 @@ public class BassClientService extends ProfileService {
             if (sm == null) {
                 return;
             }
-            if (sm.getConnectionState() != BluetoothProfile.STATE_DISCONNECTED) {
+            if (sm.getConnectionState(false) != BluetoothProfile.STATE_DISCONNECTED) {
                 Log.i(TAG, "Disconnecting device because it was unbonded.");
                 disconnect(device);
                 return;
@@ -1496,7 +1488,7 @@ public class BassClientService extends ProfileService {
                 log("getConnectionState returns STATE_DISC");
                 return BluetoothProfile.STATE_DISCONNECTED;
             }
-            return sm.getConnectionState();
+            return sm.getConnectionState(false);
         }
     }
 
@@ -1524,7 +1516,7 @@ public class BassClientService extends ProfileService {
                 int connectionState = BluetoothProfile.STATE_DISCONNECTED;
                 BassClientStateMachine sm = getOrCreateStateMachine(device);
                 if (sm != null) {
-                    connectionState = sm.getConnectionState();
+                    connectionState = sm.getConnectionState(false);
                 }
                 for (int state : states) {
                     if (connectionState == state) {
@@ -2823,8 +2815,8 @@ public class BassClientService extends ProfileService {
     public List<BluetoothLeBroadcastReceiveState> getAllSources(BluetoothDevice sink) {
         log("getAllSources for " + sink);
         synchronized (mStateMachines) {
-            BassClientStateMachine stateMachine = getOrCreateStateMachine(sink);
-            if (stateMachine == null) {
+            BassClientStateMachine stateMachine;
+            if (sink == null || (stateMachine = mStateMachines.get(sink)) == null) {
                 log("stateMachine is null");
                 return Collections.emptyList();
             }
@@ -3682,7 +3674,7 @@ public class BassClientService extends ProfileService {
         /* Dump first connected state machines */
         for (Map.Entry<BluetoothDevice, BassClientStateMachine> entry : mStateMachines.entrySet()) {
             BassClientStateMachine sm = entry.getValue();
-            if (sm.getConnectionState() == BluetoothProfile.STATE_CONNECTED) {
+            if (sm.getConnectionState(false) == BluetoothProfile.STATE_CONNECTED) {
                 sm.dump(sb);
                 sb.append("\n\n");
             }
@@ -3691,7 +3683,7 @@ public class BassClientService extends ProfileService {
         /* Dump at least all other than connected state machines */
         for (Map.Entry<BluetoothDevice, BassClientStateMachine> entry : mStateMachines.entrySet()) {
             BassClientStateMachine sm = entry.getValue();
-            if (sm.getConnectionState() != BluetoothProfile.STATE_CONNECTED) {
+            if (sm.getConnectionState(false) != BluetoothProfile.STATE_CONNECTED) {
                 sm.dump(sb);
             }
         }

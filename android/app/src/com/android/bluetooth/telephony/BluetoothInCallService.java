@@ -62,8 +62,6 @@ import androidx.annotation.VisibleForTesting;
 
 import com.android.bluetooth.hfp.BluetoothHeadsetProxy;
 import com.android.bluetooth.tbs.BluetoothLeCallControlProxy;
-import com.android.bluetooth.le_audio.LeAudioService;
-import com.android.bluetooth.btservice.ServiceFactory;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -173,10 +171,6 @@ public class BluetoothInCallService extends InCallService {
 
     private static final Object LOCK = new Object();
 
-    private final ServiceFactory mFactory = new ServiceFactory();
-
-    private LeAudioService mLeAudioService;
-
     @VisibleForTesting BluetoothHeadsetProxy mBluetoothHeadset;
 
     @VisibleForTesting BluetoothLeCallControlProxy mBluetoothLeCallControl;
@@ -209,6 +203,8 @@ public class BluetoothInCallService extends InCallService {
     private boolean mEnableDsdaMode = false;
 
     private boolean mDsDaEventsHadlingInProgress = false;
+
+    private boolean mSilentRingingRequested = false;
 
     private static final String ENABLE_DSDA_SUPPORT =
           "persist.bluetooth.init.dsda.support";
@@ -345,7 +341,13 @@ public class BluetoothInCallService extends InCallService {
 
             Integer tbsCallState = getTbsCallState(call);
             if (mBluetoothLeCallControl != null && tbsCallState != null) {
-                mBluetoothLeCallControl.onCallStateChanged(call.getTbsCallId(), tbsCallState);
+                if (mSilentRingingRequested && tbsCallState == BluetoothLeCall.STATE_ACTIVE) {
+                   BluetoothLeCall tbsCall = createTbsCall(call);
+                   mBluetoothLeCallControl.onCallAdded(tbsCall);
+                } else {
+                   mBluetoothLeCallControl.onCallStateChanged(call.getTbsCallId(), tbsCallState);
+                }
+                mSilentRingingRequested = false;
             }
 
             // If a BluetoothCall is being put on hold because of a new connecting call, ignore the
@@ -1162,6 +1164,8 @@ public class BluetoothInCallService extends InCallService {
             BluetoothLeCall tbsCall = createTbsCall(call);
             if (mBluetoothLeCallControl != null && tbsCall != null) {
                 mBluetoothLeCallControl.onCallAdded(tbsCall);
+            } else {
+                Log.i(TAG, "onCallAdded: tbs call was not added. might be DND mode");
             }
         }
     }
@@ -1248,6 +1252,7 @@ public class BluetoothInCallService extends InCallService {
         if (mBluetoothLeCallControl != null) {
             mBluetoothLeCallControl.onCallRemoved(
                     call.getTbsCallId(), getTbsTerminationReason(call));
+            mSilentRingingRequested = false;
         }
     }
 
@@ -1266,13 +1271,6 @@ public class BluetoothInCallService extends InCallService {
     public void onCallAudioStateChanged(CallAudioState audioState) {
         super.onCallAudioStateChanged(audioState);
         Log.d(TAG, "onCallAudioStateChanged, audioState == " + audioState);
-
-        mLeAudioService = mFactory.getLeAudioService();
-        if (mLeAudioService == null) {
-            Log.e(TAG, "leAudioService not available");
-            return;
-        }
-        mLeAudioService.updateCallAudioRoute(audioState.getRoute());
     }
 
     @Override
@@ -2689,7 +2687,12 @@ public class BluetoothInCallService extends InCallService {
 
             case Call.STATE_RINGING:
             case Call.STATE_SIMULATED_RINGING:
-                return BluetoothLeCall.STATE_INCOMING;
+                if (call.isSilentRingingRequested()) {
+                    mSilentRingingRequested = true;
+                    return null;
+                } else {
+                    return BluetoothLeCall.STATE_INCOMING;
+                }
         }
         return null;
     }

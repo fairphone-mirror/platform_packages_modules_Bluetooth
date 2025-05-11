@@ -395,6 +395,7 @@ tA2DP_CTRL_CMD A2dpTransport::GetPendingCmd() const {
 }
 
 void A2dpTransport::ResetPendingCmd() {
+  log::info("ResetPendingCmd");
   a2dp_pending_cmd_ = A2DP_CTRL_CMD_NONE;
 }
 
@@ -680,6 +681,15 @@ bool is_hal_offloading() {
          SessionType::A2DP_HARDWARE_OFFLOAD_ENCODING_DATAPATH;
 }
 
+bool is_hal_2_0_offloading_session_unknown() {
+    if (!is_hal_enabled()) {
+     return false;
+   }
+
+  return active_hal_interface->GetTransportInstance()->GetSessionType() ==
+         SessionType::UNKNOWN;
+}
+
 // Opens the HAL client interface of the specified session type and check
 // that is is valid. Returns nullptr if the client interface did not open
 // properly.
@@ -909,6 +919,7 @@ void ack_stream_started(const tA2DP_CTRL_ACK& ack) {
     log::warn("pending={} ignore result={}", pending_cmd, ctrl_ack);
     return;
   }
+  log::verbose("ctrl_ack={}", ctrl_ack);
   if (ctrl_ack != BluetoothAudioCtrlAck::PENDING) {
     a2dp_sink->ResetPendingCmd();
   }
@@ -928,6 +939,7 @@ void ack_stream_suspended(const tA2DP_CTRL_ACK& ack) {
     log::warn("pending={} ignore result={}", pending_cmd, ctrl_ack);
     return;
   }
+  log::verbose("ctrl_ack={}", ctrl_ack);
   if (ctrl_ack != BluetoothAudioCtrlAck::PENDING) {
     a2dp_sink->ResetPendingCmd();
   }
