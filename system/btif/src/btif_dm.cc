@@ -4177,7 +4177,7 @@ static const char* btif_get_default_local_name() {
       //osi_property_get(PROPERTY_PRODUCT_MODEL, prop_model, "");
       //strncpy(btif_default_local_name, prop_model, max_len);
     //}
-    strncpy(btif_default_local_name, "The Fairphone (Gen.6)", max_len);
+    strncpy(btif_default_local_name, "The Fairphone (Gen. 6)", max_len);
     btif_default_local_name[max_len] = '\0';
   }
   return btif_default_local_name;
