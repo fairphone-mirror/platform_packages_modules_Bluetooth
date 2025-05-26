@@ -2539,8 +2539,7 @@ public final class BluetoothAdapter {
      */
     @RequiresNoPermission
     public @LeFeatureReturnValues int isLeAudioSupported() {
-        return BluetoothStatusCodes.FEATURE_NOT_SUPPORTED;
-        /*if (!getLeAccess()) {
+        if (!getLeAccess()) {
             return BluetoothStatusCodes.ERROR_BLUETOOTH_NOT_ENABLED;
         }
         mServiceLock.readLock().lock();
@@ -2555,7 +2554,7 @@ public final class BluetoothAdapter {
             throw e.rethrowAsRuntimeException();
         } finally {
             mServiceLock.readLock().unlock();
-        }*/
+        }
     }
 
     /**
@@ -2568,8 +2567,7 @@ public final class BluetoothAdapter {
      */
     @RequiresNoPermission
     public @LeFeatureReturnValues int isLeAudioBroadcastSourceSupported() {
-        return BluetoothStatusCodes.FEATURE_NOT_SUPPORTED;
-        /*if (!getLeAccess()) {
+        if (!getLeAccess()) {
             return BluetoothStatusCodes.ERROR_BLUETOOTH_NOT_ENABLED;
         }
         mServiceLock.readLock().lock();
@@ -2584,7 +2582,7 @@ public final class BluetoothAdapter {
             throw e.rethrowAsRuntimeException();
         } finally {
             mServiceLock.readLock().unlock();
-        }*/
+        }
     }
 
     /**
@@ -2597,8 +2595,7 @@ public final class BluetoothAdapter {
      */
     @RequiresNoPermission
     public @LeFeatureReturnValues int isLeAudioBroadcastAssistantSupported() {
-        return BluetoothStatusCodes.FEATURE_NOT_SUPPORTED;
-        /*if (!getLeAccess()) {
+        if (!getLeAccess()) {
             return BluetoothStatusCodes.ERROR_BLUETOOTH_NOT_ENABLED;
         }
         mServiceLock.readLock().lock();
@@ -2613,7 +2610,7 @@ public final class BluetoothAdapter {
             throw e.rethrowAsRuntimeException();
         } finally {
             mServiceLock.readLock().unlock();
-        }*/
+        }
     }
 
     /**
