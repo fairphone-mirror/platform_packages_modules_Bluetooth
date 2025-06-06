@@ -256,7 +256,7 @@ public class LeAudioService extends ProfileService {
             mActiveState = ACTIVE_STATE_INACTIVE;
             mAllowedSinkContexts = BluetoothLeAudio.CONTEXTS_ALL;
             mAllowedSourceContexts = BluetoothLeAudio.CONTEXTS_ALL;
-            mHasFallbackDeviceWhenGettingInactive = false;
+            mHasFallbackDeviceWhenGettingInactive = true;
             mDirection = AUDIO_DIRECTION_NONE;
             mCodecStatus = null;
             mLostLeadDeviceWhileStreaming = null;
@@ -2465,11 +2465,11 @@ public class LeAudioService extends ProfileService {
             return true;
         }
 
-        if (currentlyActiveGroupId != LE_AUDIO_GROUP_ID_INVALID
-                && (groupId != LE_AUDIO_GROUP_ID_INVALID || hasFallbackDevice)) {
-            Log.i(TAG, "Remember that device has FallbackDevice when become inactive active");
-            groupDescriptor.mHasFallbackDeviceWhenGettingInactive = true;
-        }
+        // if (currentlyActiveGroupId != LE_AUDIO_GROUP_ID_INVALID
+        //         && (groupId != LE_AUDIO_GROUP_ID_INVALID || hasFallbackDevice)) {
+        //     Log.i(TAG, "Remember that device has FallbackDevice when become inactive active");
+        //     groupDescriptor.mHasFallbackDeviceWhenGettingInactive = true;
+        // }
 
         if (!mLeAudioNativeIsInitialized) {
             Log.e(TAG, "Le Audio not initialized properly.");
@@ -2853,6 +2853,7 @@ public class LeAudioService extends ProfileService {
                 */
             }
 
+            Log.d(TAG, "mHasFallback: " + descriptor.mHasFallbackDeviceWhenGettingInactive);
             updateActiveDevices(
                     groupId,
                     descriptor.mDirection,
@@ -2862,7 +2863,7 @@ public class LeAudioService extends ProfileService {
                     leaveConnectedInputDevice);
             /* Clear lost devices */
             Log.d(TAG, "Clear for group: " + groupId);
-            descriptor.mHasFallbackDeviceWhenGettingInactive = false;
+            descriptor.mHasFallbackDeviceWhenGettingInactive = true;
             clearLostDevicesWhileStreaming(descriptor);
             mHandler.post(
                     () ->
@@ -4124,6 +4125,7 @@ public class LeAudioService extends ProfileService {
                     }
 
                     /* Notify Native layer */
+                    descriptor.mHasFallbackDeviceWhenGettingInactive = false;
                     removeActiveDevice(hasFallbackDevice);
                     descriptor.setActiveState(ACTIVE_STATE_INACTIVE);
                     /* Update audio framework */
