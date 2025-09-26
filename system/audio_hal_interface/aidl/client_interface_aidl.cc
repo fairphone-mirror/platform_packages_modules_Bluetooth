@@ -29,6 +29,7 @@
 #include <vector>
 
 #include "bta/ag/bta_ag_int.h"
+#include "bta/le_audio/le_audio_types.h"
 #include "hearing_aid_software_encoding_aidl.h"
 
 const uint8_t kFetchAudioProviderRetryNumber = 3;
@@ -551,6 +552,10 @@ size_t BluetoothAudioSinkClientInterface::ReadAudioData(uint8_t* p_buf, uint32_t
 void BluetoothAudioClientInterface::RenewAudioProviderAndSession() {
   // NOTE: must be invoked on the same thread where this
   // BluetoothAudioClientInterface is running
+  if (session_started_) {
+    bluetooth::le_audio::send_vs_cmd(LTV_TYPE_STREAM_INDICATION,
+        0x01, std::vector<uint8_t>());
+  }
   FetchAudioProvider();
 
   if (session_started_) {
@@ -561,6 +566,10 @@ void BluetoothAudioClientInterface::RenewAudioProviderAndSession() {
       bluetooth::audio::aidl::hearing_aid::stop_request();
     }
     StartSession();
+    if (transport_->GetSessionType() == SessionType::LE_AUDIO_HARDWARE_OFFLOAD_ENCODING_DATAPATH) {
+      log::info("Session type: LE_AUDIO_HARDWARE_OFFLOAD_ENCODING_DATAPATH");
+      transport_->AudioServerRestart();
+    }
   }
 }
 
