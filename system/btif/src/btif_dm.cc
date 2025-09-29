@@ -3962,24 +3962,24 @@ static const char* btif_get_default_local_name_new() {
   using bluetooth::common::StringTrim;
   static std::string default_name = "";
 
-  if (default_name.empty()) {
-    std::string name = StringTrim(os::GetSystemProperty(PROPERTY_DEFAULT_DEVICE_NAME).value_or(""));
-    if (name.size() > BD_NAME_LEN) {
-      name.resize(BD_NAME_LEN);
-    }
-    default_name = name;
-  }
+  //if (default_name.empty()) {
+  //  std::string name = StringTrim(os::GetSystemProperty(PROPERTY_DEFAULT_DEVICE_NAME).value_or(""));
+  //  if (name.size() > BD_NAME_LEN) {
+  //    name.resize(BD_NAME_LEN);
+  //  }
+  //  default_name = name;
+  //}
+
+  //if (default_name.empty()) {
+  //  std::string name = StringTrim(os::GetSystemProperty(PROPERTY_PRODUCT_MODEL).value_or(""));
+  //  if (name.size() > BD_NAME_LEN) {
+  //    name.resize(BD_NAME_LEN);
+  //  }
+  //  default_name = name;
+  //}
 
   if (default_name.empty()) {
-    std::string name = StringTrim(os::GetSystemProperty(PROPERTY_PRODUCT_MODEL).value_or(""));
-    if (name.size() > BD_NAME_LEN) {
-      name.resize(BD_NAME_LEN);
-    }
-    default_name = name;
-  }
-
-  if (default_name.empty()) {
-    default_name = "Android";
+    default_name = "The Fairphone (Gen. 6)";
   }
 
   return default_name.c_str();
