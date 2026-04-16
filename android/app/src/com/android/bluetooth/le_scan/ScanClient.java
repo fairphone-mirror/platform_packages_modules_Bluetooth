@@ -12,10 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * Changes from Qualcomm Technologies, Inc. are provided under the following license:
- * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
- * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
 package com.android.bluetooth.le_scan;
@@ -24,7 +20,6 @@ import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanSettings;
 import android.os.Binder;
 import android.os.UserHandle;
-import com.android.qcomfeatureconfig.QcomScanChannelConfig;
 
 import java.util.List;
 import java.util.Objects;
@@ -113,20 +108,16 @@ public class ScanClient {
         }
 
         ScanSettings.Builder builder = new ScanSettings.Builder();
-        builder.setScanMode(newScanMode)
-            .setCallbackType(settings.getCallbackType())
-            .setScanResultType(settings.getScanResultType())
-            .setReportDelay(settings.getReportDelayMillis())
-            .setNumOfMatches(settings.getNumOfMatches())
-            .setMatchMode(settings.getMatchMode())
-            .setLegacy(settings.getLegacy())
-            .setPhy(settings.getPhy());
-
-        if (QcomScanChannelConfig.TARGET_QCOM_IOT_SCANCHANNEL) {
-            builder.setScanChannel(settings.getScanChannel());
-        }
-
-        settings = builder.build();
+        settings =
+                builder.setScanMode(newScanMode)
+                        .setCallbackType(settings.getCallbackType())
+                        .setScanResultType(settings.getScanResultType())
+                        .setReportDelay(settings.getReportDelayMillis())
+                        .setNumOfMatches(settings.getNumOfMatches())
+                        .setMatchMode(settings.getMatchMode())
+                        .setLegacy(settings.getLegacy())
+                        .setPhy(settings.getPhy())
+                        .build();
         return true;
     }
 }

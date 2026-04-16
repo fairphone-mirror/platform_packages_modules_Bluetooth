@@ -22,7 +22,6 @@ java_defaults {
         "bluetooth_flags_java_lib",
         "modules-utils-expresslog",
         "service-bluetooth-binder-aidl",
-        "qcomFeatureConfigLib",
     ],
     libs: [
         "app-compat-annotations",
@@ -86,7 +85,6 @@ java_sdk_library {
         "android.bluetooth",
         "com.android.bluetooth.flags",
         "com.android.bluetooth.jarjar",
-        "com.android.qcomfeatureconfig",
     ],
     errorprone: {
         javacflags: [
